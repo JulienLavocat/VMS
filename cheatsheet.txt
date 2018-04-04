@@ -1,0 +1,37 @@
+Abreviation & shortcut used :
+
+	[C] 		-> Client
+	[MS] 	-> Master Server
+	[GS] 	-> Game Server
+	[AWS]	-> Amazon Web Services
+	[IT2]	-> Amazon Web Services EC2 - t2.micro instance (1vCore, 1Gb ram)
+
+Match making processing flow & connection to [GS]:
+
+	[C]		request a match via REST API (/user/getMatch/:uid)
+	[MS]		send a json-representation of Match object to [C]:
+	[MS]			check if there is no waiting match -> yes spawn a new match
+	[MS]				check if returned match is not null -> yes send no match available packet
+	[MS]				add player to match and return it
+	[MS]			check if current match has less than 10 players -> yes spawn a new match
+	[MS]				check if returned match is not null -> yes send no match available packet
+	[MS]				add player to match and return it
+	[MS]			add player to current match and return it
+	[C] 		use the match object to retrieve the ip and port of game server
+	[C] 		connect to [GS]
+	[GS]		receive [C] connection request and check if provided key is equals to it's own and return status:
+				check if key is null or empty -> yes return invalid key packet
+				check if key is similar to server one -> yes return accepted : no send invalid key packet
+
+Match creation flow:
+
+	[MS]		increase current game server port
+	[MS]		check if port do not exeed port limit -> yes return null object
+	[MS]		send request [IT2] creation to AWS
+	[AWS]	send [IT2] ip to [MS]
+	[MS]		connect to [IT2]
+	[MS]		create [GS] on [IT2] using current game server port
+	[MS]		wait for validation from [GS] (i.e packet on redis queue, [GS] ready to accept player)
+	[MS]		set current server to new match (using IT2 ip and current game server port) and return it
+	
+	
